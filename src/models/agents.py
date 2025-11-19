@@ -146,7 +146,7 @@ def create_agent_pool(config: Optional[Dict[str, Any]] = None) -> List[Agent]:
             base_url="https://api.x.ai/v1"
         )
         agents.append(Agent(
-            name="grok-2-1212",
+            name="grok-4-fast-non-reasoning",
             client=grok_client,
             provider="openai"
         ))
