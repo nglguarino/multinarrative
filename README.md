@@ -111,10 +111,9 @@ Set them in `config/config.yaml` or as environment variables.
 If you use this code in your research, please cite:
 
 ```bibtex
-@inproceedings{yourname2025narrative,
-  title={Bottom-Up Multi-Agent Framework for Narrative Extraction from News Articles},
-  author={Your Name},
-  booktitle={Proceedings of the Association for Computational Linguistics},
+@inproceedings{angeloguarino2025narrative,
+  title={Multi-Agent Framework for Narrative Extraction from News Articles},
+  author={Angelo Guarino},
   year={2025}
 }
 ```
