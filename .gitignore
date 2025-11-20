@@ -50,6 +50,10 @@ data/output/*
 !data/input/.gitkeep
 !data/output/.gitkeep
 
+# Raw article files
+data/input/raw_articles/
+data/input/*.txt
+
 # Configuration
 config/config.yaml
 config/config.local.yaml

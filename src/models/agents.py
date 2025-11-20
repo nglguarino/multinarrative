@@ -212,40 +212,43 @@ class MultiAgentConsensus:
                 continue
         
         return responses
-    
+
     def _parse_narratives(self, response: str) -> List[str]:
         """
         Parse narrative strings from agent response.
-        
+
         Expected format: Each narrative on a new line, optionally numbered.
-        
+
         Args:
             response: Raw agent response
-            
+
         Returns:
             List of parsed narrative strings
         """
         narratives = []
         lines = response.strip().split('\n')
-        
+
         for line in lines:
             line = line.strip()
             if not line:
                 continue
-            
+
             # Remove numbering (1., 2., etc.)
             if line and line[0].isdigit():
-                # Find the first space or period after digits
                 idx = 0
-                while idx < len(line) and (line[idx].isdigit() or line[idx] in ['.', ')']):
+                while idx < len(line) and (line[idx].isdigit() or line[idx] in ['.', ')', ']']):
                     idx += 1
                 line = line[idx:].strip()
-            
-            # Remove bullet points
-            if line.startswith('- ') or line.startswith('• '):
+
+            # Remove bullet points and other markers
+            if line.startswith('- ') or line.startswith('• ') or line.startswith('* '):
                 line = line[2:].strip()
-            
-            if line:
+
+            # Remove quotes if present
+            if line.startswith('"') and line.endswith('"'):
+                line = line[1:-1].strip()
+
+            if line and len(line) > 10:  # Filter out very short non-narratives
                 narratives.append(line)
-        
+
         return narratives
