@@ -1,0 +1,37 @@
+# API Keys for LLM providers
+api_keys:
+  openai: ${OPENAI_API_KEY}
+  gemini: ${GEMINI_API_KEY}
+  claude: ${CLAUDE_API_KEY}
+  grok: ${GROK_API_KEY}
+  deepseek: ${DEEPSEEK_API_KEY}
+
+# Embedding model configuration
+embeddings:
+  model_name: "all-mpnet-base-v2"
+  device: null  # null for auto-detect, 'cuda' for GPU, 'cpu' for CPU
+
+# Metadata extraction settings
+metadata:
+  use_gpu: false  # Set to true to use GPU for zero-shot classification
+
+  # NLP settings
+  nlp:
+    spacy_model: "en_core_web_lg"
+    min_entity_frequency: 2
+    max_actors: 15
+    max_places: 10
+    max_topics: 5
+
+  # Zero-shot classification
+  topic_classification:
+    enabled: true
+    model: "facebook/bart-large-mnli"
+    confidence_threshold: 0.5
+
+# Pipeline configuration
+pipeline:
+  graph:
+    similarity_threshold: 0.80  # Threshold for linking similar narratives
+    min_article_count: 3  # Minimum articles for across-article narrative
+    min_narratives_for_macro: 3  # Minimum narratives to form macro-argument
