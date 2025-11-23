@@ -36,7 +36,7 @@ Extract 3-7 narratives per article. Each narrative should be:
 
 Output ONLY the narratives, one per line, no numbering or bullets."""
 
-    def __init__(self, agents: List[Agent], embedding_model=None):
+    def __init__(self, agents: List[Agent], embedding_model=None, max_narratives: int = None):
         """
         Initialize article extractor.
 
@@ -47,6 +47,7 @@ Output ONLY the narratives, one per line, no numbering or bullets."""
         self.agents = agents
         self.consensus = MultiAgentConsensus(agents)
         self.embedding_model = embedding_model
+        self.max_narratives = max_narratives
         if embedding_model:
             self.semantic_dedupe = SemanticDedupe(
                 embedding_model,
@@ -83,8 +84,11 @@ Output ONLY the narratives, one per line, no numbering or bullets."""
         if self.semantic_dedupe:
             narratives = self.semantic_dedupe.deduplicate(raw_narratives)
         else:
-            # Fall back to basic deduplication
             narratives = list(set(raw_narratives))
+
+        # Apply max narratives limit if configured
+        if self.max_narratives:
+            narratives = narratives[:self.max_narratives]
 
         # Filter for brevity
         narratives = [n for n in narratives if len(n.split()) >= 2 and len(n.split()) <= 15]

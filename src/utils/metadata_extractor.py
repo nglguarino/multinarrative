@@ -215,7 +215,7 @@ class AdvancedMetadataExtractor:
                 text_samples,
                 candidate_labels=self.TOPIC_CATEGORIES,
                 multi_label=True,
-                batch_size=16  # Process 16 at a time
+                batch_size=64  # Process 64 at a time
             )
 
             # Extract topics from results
