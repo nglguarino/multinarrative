@@ -5,5 +5,5 @@ A multi-agent system for extracting narratives from news articles
 using hierarchical bottom-up processing.
 """
 
-__version__ = "1.0.0"
+__version__ = "2.1.1"
 __author__ = "Angelo Guarino"
