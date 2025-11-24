@@ -1,9 +1,17 @@
 """
-Narrative Extraction Framework
+Visualization module for narrative graphs.
 
-A multi-agent system for extracting narratives from news articles
-using hierarchical bottom-up processing.
+Provides interactive visualization and exploration capabilities using Plotly.
 """
 
-__version__ = "1.0.0"
-__author__ = "Your Name"
+from .graph_visualizer import NarrativeGraphVisualizer
+from .interactive_explorer import (
+    InteractiveNarrativeExplorer,
+    create_narrative_dashboard
+)
+
+__all__ = [
+    'NarrativeGraphVisualizer',
+    'InteractiveNarrativeExplorer',
+    'create_narrative_dashboard'
+]
