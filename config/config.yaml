@@ -32,7 +32,7 @@ metadata:
 # Pipeline configuration
 pipeline:
   extraction:
-    deduplication_threshold: 0.75  # NEW: Threshold for deduplicating narratives within articles (0.70-0.85)
+    deduplication_threshold: 0.70  # NEW: Threshold for deduplicating narratives within articles (0.70-0.85)
     max_narratives_per_article: 20  # NEW: Maximum narratives to keep per article
 
   graph:
