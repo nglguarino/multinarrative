@@ -163,6 +163,9 @@ class InteractiveNarrativeExplorer:
         """Apply current filters to nodes."""
         filtered = self.visualizer.nodes.copy()
 
+        # DEBUG: Print what we're starting with
+        print(f"DEBUG: Starting with {len(filtered)} nodes")
+
         # Search filter
         if self.search_box.value:
             search_term = self.search_box.value.lower()
@@ -170,30 +173,43 @@ class InteractiveNarrativeExplorer:
                 node for node in filtered
                 if search_term in node['narrative'].lower()
             ]
+            print(f"DEBUG: After search filter: {len(filtered)} nodes")
 
-        # Topic filter
-        if 'All' not in self.topic_filter.value and self.topic_filter.value:
-            selected_topics = set(self.topic_filter.value)
-            filtered = [
-                node for node in filtered
-                if any(topic in selected_topics for topic in node['topics'])
-            ]
+        # Topic filter - ONLY apply if something other than 'All' is selected
+        if self.topic_filter.value and len(self.topic_filter.value) > 0:
+            # Check if 'All' is in the selection
+            if 'All' not in self.topic_filter.value:
+                selected_topics = set(self.topic_filter.value)
+                before_count = len(filtered)
+                filtered = [
+                    node for node in filtered
+                    if node.get('topics') and any(topic in selected_topics for topic in node['topics'])
+                ]
+                print(f"DEBUG: After topic filter ({selected_topics}): {len(filtered)} nodes (was {before_count})")
 
-        # Actor filter
-        if 'All' not in self.actor_filter.value and self.actor_filter.value:
-            selected_actors = set(self.actor_filter.value)
-            filtered = [
-                node for node in filtered
-                if any(actor in selected_actors for actor in node['actors'])
-            ]
+        # Actor filter - ONLY apply if something other than 'All' is selected
+        if self.actor_filter.value and len(self.actor_filter.value) > 0:
+            # Check if 'All' is in the selection
+            if 'All' not in self.actor_filter.value:
+                selected_actors = set(self.actor_filter.value)
+                before_count = len(filtered)
+                filtered = [
+                    node for node in filtered
+                    if node.get('actors') and any(actor in selected_actors for actor in node['actors'])
+                ]
+                print(f"DEBUG: After actor filter ({selected_actors}): {len(filtered)} nodes (was {before_count})")
 
         # Article count filter
         min_count = self.article_count_slider.value
-        filtered = [
-            node for node in filtered
-            if node['article_count'] >= min_count
-        ]
+        if min_count > 1:
+            before_count = len(filtered)
+            filtered = [
+                node for node in filtered
+                if node.get('article_count', 0) >= min_count
+            ]
+            print(f"DEBUG: After article count filter (>={min_count}): {len(filtered)} nodes (was {before_count})")
 
+        print(f"DEBUG: Final filtered count: {len(filtered)} nodes")
         return filtered
 
     def _on_update_click(self, button):
@@ -347,14 +363,60 @@ class InteractiveNarrativeExplorer:
         ]))
 
 
-def create_narrative_dashboard(visualizer, graph):
+def create_narrative_dashboard(visualizer, graph=None):
     """
     Create a comprehensive dashboard with multiple views.
 
     Args:
         visualizer: NarrativeGraphVisualizer instance
-        graph: NarrativeGraph instance
+        graph: NarrativeGraph instance (optional - can extract from visualizer)
     """
+    # If no graph provided, we'll create a mock one for basic functionality
+    if graph is None:
+        # Create a simple mock graph object with required methods
+        class MockGraph:
+            def __init__(self, visualizer):
+                self.visualizer = visualizer
+
+            def get_summary(self):
+                """Get summary statistics."""
+                all_actors = {}
+                all_topics = {}
+                all_places = {}
+
+                for node in self.visualizer.nodes:
+                    for actor in node.get('actors', []):
+                        all_actors[actor] = all_actors.get(actor, 0) + 1
+                    for topic in node.get('topics', []):
+                        all_topics[topic] = all_topics.get(topic, 0) + 1
+                    for place in node.get('places', []):
+                        all_places[place] = all_places.get(place, 0) + 1
+
+                return {
+                    'total_narratives': len(self.visualizer.nodes),
+                    'total_macro_arguments': len(self.visualizer.macro_arguments),
+                    'avg_articles_per_narrative': sum(n['article_count'] for n in self.visualizer.nodes) / len(
+                        self.visualizer.nodes) if self.visualizer.nodes else 0,
+                    'top_actors': sorted(all_actors.items(), key=lambda x: x[1], reverse=True)[:10],
+                    'top_topics': sorted(all_topics.items(), key=lambda x: x[1], reverse=True)[:10],
+                    'top_places': sorted(all_places.items(), key=lambda x: x[1], reverse=True)[:10]
+                }
+
+            def query_by_actor(self, actor):
+                """Query by actor."""
+                return [n for n in self.visualizer.nodes if actor.lower() in [a.lower() for a in n.get('actors', [])]]
+
+            def query_by_topic(self, topic):
+                """Query by topic."""
+                return [n for n in self.visualizer.nodes if topic.lower() in [t.lower() for t in n.get('topics', [])]]
+
+            def query_by_place(self, place):
+                """Query by place."""
+                return [n for n in self.visualizer.nodes if place.lower() in [p.lower() for p in n.get('places', [])]]
+
+        graph = MockGraph(visualizer)
+
+
     from IPython.display import display, HTML
     import ipywidgets as widgets
 
@@ -457,8 +519,68 @@ def create_narrative_dashboard(visualizer, graph):
 
     # Tab 3: Query Interface
     with tab.children[2]:
-        explorer = InteractiveNarrativeExplorer(visualizer, graph)
-        explorer.query_interface()
+        # Create query widgets directly without needing full explorer
+        query_type = widgets.Dropdown(
+            options=['By Actor', 'By Topic', 'By Place'],
+            description='Query Type:',
+            style={'description_width': '120px'}
+        )
+
+        query_input = widgets.Text(
+            placeholder='Enter query value...',
+            description='Value:',
+            style={'description_width': '120px'}
+        )
+
+        query_button = widgets.Button(
+            description='Run Query',
+            button_style='info',
+            icon='search'
+        )
+
+        results_area = widgets.Output()
+
+        def on_query_click(button):
+            with results_area:
+                results_area.clear_output()
+
+                query_value = query_input.value
+                if not query_value:
+                    print("Please enter a query value")
+                    return
+
+                # Run query using graph object
+                if query_type.value == 'By Actor':
+                    results = graph.query_by_actor(query_value)
+                elif query_type.value == 'By Topic':
+                    results = graph.query_by_topic(query_value)
+                elif query_type.value == 'By Place':
+                    results = graph.query_by_place(query_value)
+
+                # Display results
+                print(f"\n{'=' * 60}")
+                print(f"Query Results: {len(results)} narratives found")
+                print('=' * 60)
+
+                for i, result in enumerate(results[:20], 1):
+                    print(f"\n{i}. {result['narrative']}")
+                    print(f"   Articles: {result['article_count']}")
+                    if 'article_ids' in result:
+                        print(f"   Article IDs: {result['article_ids'][:10]}")
+
+                if len(results) > 20:
+                    print(f"\n... and {len(results) - 20} more results")
+
+        query_button.on_click(on_query_click)
+
+        # Display
+        display(widgets.VBox([
+            widgets.HTML("<h3>Query Interface</h3>"),
+            query_type,
+            query_input,
+            query_button,
+            results_area
+        ]))
 
     # Tab 4: Top Entities
     with tab.children[3]:
