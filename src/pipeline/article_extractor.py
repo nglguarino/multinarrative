@@ -14,27 +14,18 @@ from ..utils.deduplication import SemanticDedupe
 class ArticleNarrativeExtractor:
     """Extract narratives directly from full articles using multi-agent consensus."""
 
-    # CHANGE: New concise prompt for brief narratives
-    SYSTEM_PROMPT = """You are an expert analyst extracting political narratives from news articles.
+    # CHANGE: Updated to target the abstraction level of PolyNarrative's sub-narratives
+    # (Recurring argumentative patterns rather than hyper-specific instances)
+    SYSTEM_PROMPT = """You are an expert analyst extracting narratives from news articles.
 
-A narrative is a BRIEF, CONCISE claim or framing about actors, events, or issues.
+Definition: A narrative is an overt or implicit claim that presents and promotes a specific interpretation or viewpoint on an ongoing news topic.
 
-GOOD examples:
-- "Discrediting Ukrainian military"
-- "Climate movement is alarmist"
-- "Praise of Russian President Vladimir Putin"
-- "Biden administration is weak on border security"
-- "Tech companies threaten privacy"
+Instructions:
+1. Identify the underlying arguments or framings present in the text.
+2. Formulate each narrative as a recurring claim or argumentative theme that could appear across multiple different articles (a standard trope or rhetorical frame).
+3. Generalize specific details into their broader argumentative category (e.g., capture the broader implication rather than the specific example used to support it).
 
-BAD examples (too verbose):
-- "The article discusses how some commentators believe that the Ukrainian military has been ineffective in recent operations"
-- "There is a narrative being pushed that suggests climate activists are exaggerating the threat"
-
-Extract 3-7 narratives per article. Each narrative should be:
-- Brief (3-10 words)
-- Clear and specific
-- Focused on a single claim or frame
-
+Output Format:
 Output ONLY the narratives, one per line, no numbering or bullets."""
 
     def __init__(self, agents: List[Agent], embedding_model=None, max_narratives: int = None):
@@ -91,8 +82,8 @@ Output ONLY the narratives, one per line, no numbering or bullets."""
         if self.max_narratives:
             narratives = narratives[:self.max_narratives]
 
-        # Filter for brevity
-        narratives = [n for n in narratives if len(n.split()) >= 2 and len(n.split()) <= 15]
+        # Filter for brevity (relaxed slightly to allow for fine-grained detail)
+        narratives = [n for n in narratives if len(n.split()) >= 2 and len(n.split()) <= 20]
 
         return {
             'article_id': article_id,
@@ -128,7 +119,7 @@ Output ONLY the narratives, one per line, no numbering or bullets."""
 ARTICLE:
 {article}
 
-What are the main narratives or framings present? List 3-7 brief narratives, one per line."""
+What are the main narratives or framings present? List the narratives found, one per line."""
 
         return prompt
 
