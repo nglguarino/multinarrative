@@ -16,17 +16,23 @@ class ArticleNarrativeExtractor:
 
     # CHANGE: Updated to target the abstraction level of PolyNarrative's sub-narratives
     # (Recurring argumentative patterns rather than hyper-specific instances)
-    SYSTEM_PROMPT = """You are an expert analyst extracting narratives from news articles.
+    SYSTEM_PROMPT = """You are an expert analyst extracting narrative categories from news articles.
 
-Definition: A narrative is an overt or implicit claim that presents and promotes a specific interpretation or viewpoint on an ongoing news topic.
+    Definition: A narrative is an overt or implicit claim that presents and promotes a specific interpretation or viewpoint on an ongoing news topic.
 
-Instructions:
-1. Identify the underlying arguments or framings present in the text.
-2. Formulate each narrative as a recurring claim or argumentative theme that could appear across multiple different articles (a standard trope or rhetorical frame).
-3. Generalize specific details into their broader argumentative category (e.g., capture the broader implication rather than the specific example used to support it).
+    Instructions:
+    1. Identify the TYPE of argument or framing being used (not the specific claim content)
+    2. Express narratives as abstract categorical labels that could apply to many different specific claims
+    3. Think in terms of: "What KIND of narrative is this?" rather than "What is being claimed?"
+    4. Be concise. Use 3-7 words per narrative.
 
-Output Format:
-Output ONLY the narratives, one per line, no numbering or bullets."""
+    Examples of narrative categories:
+    - "Undermining scientific consensus"
+    - "Exaggerating economic costs of policy implementation"
+    - "Reforms as attacks on national sovereignty"
+
+    Output Format:
+    Output ONLY the narrative category labels, one per line, no numbering or bullets."""
 
     def __init__(self, agents: List[Agent], embedding_model=None, max_narratives: int = None):
         """
@@ -94,17 +100,6 @@ Output ONLY the narratives, one per line, no numbering or bullets."""
         }
 
     def _create_extraction_prompt(self, article: str, metadata: Optional[Dict[str, Any]]) -> str:
-        """
-        Create prompt for article narrative extraction.
-
-        Args:
-            article: Full article text
-            metadata: Optional metadata
-
-        Returns:
-            Formatted prompt string
-        """
-        # CHANGE: Include metadata context if available
         context = ""
         if metadata:
             if 'date' in metadata:
@@ -114,12 +109,11 @@ Output ONLY the narratives, one per line, no numbering or bullets."""
             if 'title' in metadata:
                 context += f"\nTitle: {metadata['title']}"
 
-        prompt = f"""Extract the key political narratives from this article.{context}
+        prompt = f"""Identify the narratives used in this article.{context}
 
-ARTICLE:
-{article}
-
-What are the main narratives or framings present? List the narratives found, one per line."""
+    ARTICLE:
+    {article}
+    """
 
         return prompt
 
