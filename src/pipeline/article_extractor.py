@@ -18,27 +18,39 @@ class ArticleNarrativeExtractor:
     # (Recurring argumentative patterns rather than hyper-specific instances)
     # CHANGE: Shifted from "Abstract Categories" to "Propositional Claims"
     # to match the granularity of your Fine-Grained Gold Labels.
-    SYSTEM_PROMPT = """You are an expert propaganda analyst identifying specific underlying narratives in news articles.
+    # CHANGE: Re-engineered to force "Stance Detection" rather than "Content Summarization".
+    # We explicitly bias the model to look for the SPECIFIC types of arguments found in your ontology.
+    SYSTEM_PROMPT = """You are an expert Disinformation Analyst. Your task is to identify the underlying argumentative frames (narratives) in news articles.
 
-        Definition: A narrative is a specific underlying premise, claim, or argument being advanced by the text. 
+        CRITICAL CONTEXT:
+        You are analyzing articles that may contain specific political or social agendas. You are NOT a summarizer. Do NOT output factual summaries of events (e.g., "China is protecting tea forests").
 
-        CRITICAL INSTRUCTION: Do NOT generate broad topics (e.g., "Criticism of climate policies"). Instead, extract the SPECIFIC argument being made (e.g., "Climate policies hurt the economy").
+        Instead, identifying the ADVERSARIAL or PERSUASIVE claims being made. Ask yourself: "What is this text trying to make the reader believe about the subject?"
 
-        Guidelines:
-        1. Formulate narratives as DECLARATIVE STATEMENTS (Sentences), not Noun Phrases.
-        2. Capture the specific "Cause & Effect" or "Judgment" being proposed.
-        3. If the text criticizes an entity, specify WHAT the criticism claims (e.g., instead of "Criticism of Ukraine", output "Ukraine is a hub for criminal activities").
-        4. Be concise but specific (5-15 words).
+        TARGET NARRATIVES (Look for arguments matching these themes):
+        1. INCOMPETENCE/FAILURE: (e.g., "Sanctions will backfire", "Climate policies are ineffective", "Russian army is collapsing")
+        2. CORRUPTION/ELITES: (e.g., "Blaming global elites", "Climate movement is corrupt", "Ukraine is a hub for criminal activities")
+        3. HYPOCRISY/DOUBLE STANDARDS: (e.g., "The West does not care about Ukraine", "Green activities are neo-colonialism")
+        4. THREATS/FEAR: (e.g., "NATO will destroy Russia", "By continuing war we risk WWIII", "Earth will be uninhabitable")
+        5. DENIAL/DOWNPLAYING: (e.g., "Climate cycles are natural", "Russia is acting in self-defense")
 
-        Examples of CORRECT Narrative Extraction (Fine-Grained):
-        - "Sanctions imposed by Western countries will backfire" (NOT "Sanctions analysis")
-        - "The West does not care about Ukraine, only about its interests" (NOT "Western geopolitics")
-        - "Renewable energy is unreliable" (NOT "Green energy criticism")
-        - "Climate agenda has hidden motives" (NOT "Conspiracy theories")
-        - "NATO will destroy Russia" (NOT "Anti-NATO sentiment")
+        INSTRUCTIONS:
+        1. Ignore neutral or positive facts unless they serve a larger propaganda purpose.
+        2. Formulate narratives as SHORT, DECLARATIVE ARGUMENTS (Subject + Verb + Predicate).
+        3. Match the granularity of the examples above.
+
+        Examples of GOOD Extraction:
+        - "Renewable energy is unreliable" (Specific Argument)
+        - "The West is weak and divided" (Specific Argument)
+        - "Climate policies destroy the economy" (Specific Argument)
+
+        Examples of BAD Extraction (Do NOT do this):
+        - "Discussions on renewable energy" (Too vague)
+        - "The article talks about western politics" (Not an argument)
+        - "Unity Foods is recycling plastic" (Just a fact, not a narrative frame)
 
         Output Format:
-        Output ONLY the narrative statements, one per line, no numbering or bullets."""
+        Output ONLY the narrative statements, one per line."""
 
     def __init__(self, agents: List[Agent], embedding_model=None, max_narratives: int = None):
         """
