@@ -14,43 +14,54 @@ from ..utils.deduplication import SemanticDedupe
 class ArticleNarrativeExtractor:
     """Extract narratives directly from full articles using multi-agent consensus."""
 
-    # CHANGE: Updated to target the abstraction level of PolyNarrative's sub-narratives
-    # (Recurring argumentative patterns rather than hyper-specific instances)
-    # CHANGE: Shifted from "Abstract Categories" to "Propositional Claims"
-    # to match the granularity of your Fine-Grained Gold Labels.
-    # CHANGE: Re-engineered to force "Stance Detection" rather than "Content Summarization".
-    # We explicitly bias the model to look for the SPECIFIC types of arguments found in your ontology.
-    SYSTEM_PROMPT = """You are an expert Disinformation Analyst. Your task is to identify the underlying argumentative frames (narratives) in news articles.
+    # CHANGE: Completely overhauled to target "Gold Label" abstraction level.
+    # The goal is no longer 'Extraction' (finding specific text), but 'Abstraction' (classifying themes).
+    SYSTEM_PROMPT = """You are an expert Narrative Analyst. Your task is to identify the high-level NARRATIVE THEMES present in the text.
 
-        CRITICAL CONTEXT:
-        You are analyzing articles that may contain specific political or social agendas. You are NOT a summarizer. Do NOT output factual summaries of events (e.g., "China is protecting tea forests").
+        CRITICAL DISTINCTION:
+        Do NOT extract specific headlines or event details.
+        Do NOT output specific arguments like "The Green Deal is failing."
+        INSTEAD, output the GENERALIZED THEME: "Climate policies are ineffective."
 
-        Instead, identifying the ADVERSARIAL or PERSUASIVE claims being made. Ask yourself: "What is this text trying to make the reader believe about the subject?"
-
-        TARGET NARRATIVES (Look for arguments matching these themes):
-        1. INCOMPETENCE/FAILURE: (e.g., "Sanctions will backfire", "Climate policies are ineffective", "Russian army is collapsing")
-        2. CORRUPTION/ELITES: (e.g., "Blaming global elites", "Climate movement is corrupt", "Ukraine is a hub for criminal activities")
-        3. HYPOCRISY/DOUBLE STANDARDS: (e.g., "The West does not care about Ukraine", "Green activities are neo-colonialism")
-        4. THREATS/FEAR: (e.g., "NATO will destroy Russia", "By continuing war we risk WWIII", "Earth will be uninhabitable")
-        5. DENIAL/DOWNPLAYING: (e.g., "Climate cycles are natural", "Russia is acting in self-defense")
+        Your goal is to bridge the gap between specific instances and abstract categories.
 
         INSTRUCTIONS:
-        1. Ignore neutral or positive facts unless they serve a larger propaganda purpose.
-        2. Formulate narratives as SHORT, DECLARATIVE ARGUMENTS (Subject + Verb + Predicate).
-        3. Match the granularity of the examples above.
+        1. Identify specific argumentative claims in the text.
+        2. GENERALIZE them into a standardized narrative label.
+        3. Remove specific entity names (e.g., replace "Biden" with "The West/Elites", replace "Volkswagen" with "Industry").
+        4. Use the present tense (General Truth).
 
-        Examples of GOOD Extraction:
-        - "Renewable energy is unreliable" (Specific Argument)
-        - "The West is weak and divided" (Specific Argument)
-        - "Climate policies destroy the economy" (Specific Argument)
+        TARGET CATEGORIES & FORMAT (Map specific claims to these types of General Themes):
 
-        Examples of BAD Extraction (Do NOT do this):
-        - "Discussions on renewable energy" (Too vague)
-        - "The article talks about western politics" (Not an argument)
-        - "Unity Foods is recycling plastic" (Just a fact, not a narrative frame)
+        [CATEGORY: INCOMPETENCE & FAILURE]
+        - Specific: "German industry is collapsing due to gas prices."
+        -> GOLD LABEL: "Sanctions imposed by Western countries will backfire"
+        - Specific: "Wind turbines are freezing in Texas."
+        -> GOLD LABEL: "Renewable energy is unreliable"
 
-        Output Format:
-        Output ONLY the narrative statements, one per line."""
+        [CATEGORY: CORRUPTION & MALICE]
+        - Specific: "Zelensky is buying yachts with aid money."
+        -> GOLD LABEL: "Ukrainian government is corrupt"
+        - Specific: "The WEF is orchestrating the energy crisis."
+        -> GOLD LABEL: "Global elites are conspiring against the public"
+
+        [CATEGORY: THREATS & FEAR]
+        - Specific: "Sending F-16s will lead to nuclear war."
+        -> GOLD LABEL: "Western intervention risks World War III"
+        - Specific: "We will eat bugs and own nothing."
+        -> GOLD LABEL: "Green agenda threatens individual freedom"
+
+        [CATEGORY: DENIAL & DOWNPLAYING]
+        - Specific: "The ice in Antarctica is actually growing."
+        -> GOLD LABEL: "Climate change indicators are not alarming"
+        - Specific: "Russia only attacked to stop NATO expansion."
+        -> GOLD LABEL: "Russia is acting in self-defense"
+
+        OUTPUT REQUIREMENTS:
+        - Output ONLY the generalized narrative themes.
+        - One theme per line.
+        - Keep sentences short, standardized, and abstract.
+        """
 
     def __init__(self, agents: List[Agent], embedding_model=None, max_narratives: int = None):
         """
@@ -65,9 +76,10 @@ class ArticleNarrativeExtractor:
         self.embedding_model = embedding_model
         self.max_narratives = max_narratives
         if embedding_model:
+            # CHANGE: Increased threshold slightly as abstract themes are more likely to overlap
             self.semantic_dedupe = SemanticDedupe(
                 embedding_model,
-                similarity_threshold=0.85  # Higher threshold for brief narratives
+                similarity_threshold=0.90
             )
         else:
             self.semantic_dedupe = None
@@ -106,8 +118,9 @@ class ArticleNarrativeExtractor:
         if self.max_narratives:
             narratives = narratives[:self.max_narratives]
 
-        # Filter for brevity (relaxed slightly to allow for fine-grained detail)
-        narratives = [n for n in narratives if len(n.split()) >= 2 and len(n.split()) <= 20]
+        # CHANGE: Removed the "brevity filter" that was deleting short/long narratives.
+        # Abstract labels can be short ("The West is weak") or long ("Sanctions imposed by Western countries will backfire").
+        # We rely on the prompt to control length.
 
         return {
             'article_id': article_id,
@@ -118,6 +131,7 @@ class ArticleNarrativeExtractor:
         }
 
     def _create_extraction_prompt(self, article: str, metadata: Optional[Dict[str, Any]]) -> str:
+        # CHANGE: Added explicit instruction in the user prompt to reinforce the system prompt
         context = ""
         if metadata:
             if 'date' in metadata:
@@ -127,7 +141,10 @@ class ArticleNarrativeExtractor:
             if 'title' in metadata:
                 context += f"\nTitle: {metadata['title']}"
 
-        prompt = f"""Identify the narratives used in this article.
+        prompt = f"""Analyze the following article and extract the underlying NARRATIVE THEMES.
+        
+        Remember: Do not describe *what* happened (events). Describe *the argument* being made (themes).
+        Map specific instances to general categories (e.g., "Germany's economy" -> "The West").
 
     ARTICLE:
     {article}
