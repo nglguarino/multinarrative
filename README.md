@@ -3,9 +3,8 @@
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A sophisticated framework for extracting and analyzing political narratives from news articles using multi-agent consensus and graph-based analysis. Designed for research applications requiring large-scale narrative analysis.
+A framework for extracting and analyzing political narratives from news articles using multi-agent consensus and graph-based analysis. Designed for research applications requiring large-scale narrative analysis.
 
-![Narrative Network Visualization](https://via.placeholder.com/800x400/667eea/ffffff?text=Interactive+Network+Visualization)
 
 ## 🌟 Key Features
 
