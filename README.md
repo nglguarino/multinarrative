@@ -9,7 +9,7 @@ A framework for extracting and analyzing political narratives from news articles
 ## 🌟 Key Features
 
 ### Multi-Agent Narrative Extraction
-- **5 LLM Agents** working in consensus (GPT-4, Gemini, Claude, Grok, DeepSeek)
+- **4 LLM Agents** working in consensus (GPT-4, Claude, Grok, DeepSeek)
 - **Hierarchical Processing** from article-level to macro-arguments
 - **Semantic Deduplication** using state-of-the-art embeddings
 - **GPU Acceleration** for 10-100x speedup
